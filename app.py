@@ -299,7 +299,7 @@ def showData():
 
 	# Remove temporary files
 	os.remove(upload_file)
-	os.remove(output_file)
+	#os.remove(output_file)
 
 
 	return render_template('show_csv_data.html', data_var=uploaded_df_html)
