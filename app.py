@@ -1,9 +1,9 @@
-from distutils.log import debug
 from fileinput import filename
 import pandas as pd
 from flask import *
 import os
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import RequestEntityTooLarge
 
 app = Flask(__name__)
 
@@ -13,36 +13,61 @@ app.config['TESTING'] = False
 app.config['SECRET_KEY'] = os.urandom(24)  # Set a strong secret key
 
 UPLOAD_FOLDER = os.path.join('staticFiles', 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {'csv'}
-
+app.config['MAX_CONTENT_LENGTH'] = 1 * 1000 * 1000
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 @app.route('/', methods=['GET', 'POST'])
 def uploadFile():
-    if request.method == 'POST':
-        f = request.files.get('file')
-        # Ensure a file is selected
-        if not f:
-            flash('No file selected. Please choose a file to upload.', 'danger')
-            return redirect('/')
-        
-        # Extracting uploaded file name
-        data_filename = secure_filename(f.filename)
-        
-        # Save the uploaded file
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], data_filename)
-        f.save(file_path)
-        
-        # Store the file path in session (if needed)
-        session['uploaded_data_file_path'] = file_path
-        
-        # Flash success message
-        flash('File uploaded successfully!', 'success')
-        return redirect('/')
-    
-    return render_template("index.html")
+	if request.method == 'POST':
+		f = request.files.get('file')
 
+		# Ensure a file is selected
+		if not f:
+			flash('No file selected. Please choose a file to upload.', 'danger')
+			return redirect(request.url)
+		
+		# Check if the file has the allowed extension
+		if not allowed_file(f.filename):
+			flash('Invalid file format. Only CSV files are allowed.', 'danger')
+			return redirect(request.url)
+
+		# Check if the file size is within the allowed limit (after reading the file content)
+		# We use the `f.seek(0)` to ensure we reset the file pointer
+		f.seek(0, os.SEEK_END)  # Move to the end to check the file size
+		file_size = f.tell()    # Get the file size
+		f.seek(0)               # Reset the pointer back to the beginning
+
+		if file_size > app.config['MAX_CONTENT_LENGTH']:
+			flash('File is too large. Please upload a file smaller than 1 MB.', 'danger')
+			return redirect(request.url)
+
+		# If the file passes both checks, save it
+		data_filename = secure_filename(f.filename)
+		file_path = os.path.join(app.config['UPLOAD_FOLDER'], data_filename)
+		f.save(file_path)
+		
+		# Store the file path in session
+		session['uploaded_data_file_path'] = file_path
+		
+		# Flash success message
+		flash('File uploaded successfully!', 'success')
+		return redirect('/')
+	
+	return render_template("index.html")
+
+
+# Validation for the Upload. Check if the file extension is allowed
+def allowed_file(filename):
+	return '.' in filename and \
+		filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+		
+# Validation for the Upload. Handle the 413 error (Request Upload Too Large)
+@app.errorhandler(RequestEntityTooLarge)
+def handle_file_too_large(error):
+	flash('File is too large. Please upload a file smaller than 1 MB.', 'danger')
+	return redirect(request.url)
 
 
 @app.route('/load_example')
@@ -273,4 +298,4 @@ def showData():
 
 
 if __name__ == '__main__':
-	app.run(debug=True)
+	app.run()
