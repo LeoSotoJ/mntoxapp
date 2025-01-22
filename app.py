@@ -49,7 +49,7 @@ def uploadFile():
 		f.save(file_path)
 		
 		# Store the file path in session
-		session['uploaded_data_file_path'] = file_path
+		session['uploaded_file'] = file_path
 		
 		# Flash success message
 		flash('File uploaded successfully!', 'success')
@@ -72,9 +72,14 @@ def handle_file_too_large(error):
 
 @app.route('/load_example')
 def load_example():
-    # Simulate file upload by setting the example file path in session
     example_file_path = os.path.join('staticFiles', 'example-DDA-features.csv')
-    session['uploaded_data_file_path'] = example_file_path
+    
+    # Simulates an uploaded file then same processing for example and client file when cleaning temp files
+    import shutil
+    copied_file_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(example_file_path))
+    shutil.copy(example_file_path, copied_file_path)  
+    
+    session['uploaded_file'] = copied_file_path
 
     # Flash success message
     flash('Example file loaded successfully!', 'success')
@@ -87,7 +92,7 @@ def load_example():
 def download_example():
     # Path to the example file
     example_file_path = os.path.join('staticFiles', 'example-DDA-features.csv')
-    
+	    
     # Check if the file exists
     if os.path.exists(example_file_path):
         return send_from_directory(
@@ -103,10 +108,10 @@ def download_example():
 def showData():
 
 	# Uploaded File Path
-	data_file_path = session.get('uploaded_data_file_path', None)
+	upload_file = session.get('uploaded_file', None)
 	
 	# Read csv
-	uploaded_df = pd.read_csv(data_file_path, encoding='utf-8-sig', header=None, index_col=0, sep=';')
+	uploaded_df = pd.read_csv(upload_file, encoding='utf-8-sig', header=None, index_col=0, sep=';')
 	uploaded_df.columns = ['Raw spectra']
 
 	result_df = uploaded_df
@@ -118,7 +123,7 @@ def showData():
 	import numpy as np
 	from matchms import Spectrum
 	spectrums_features=[]
-	with open(data_file_path, 'r', encoding='utf-8-sig') as file:
+	with open(upload_file, 'r', encoding='utf-8-sig') as file:
 		reader = csv.reader(file, delimiter=';')
 		for row in reader:
 			if row[0] == 'id' or not row[0]:
@@ -150,14 +155,14 @@ def showData():
 	spectrums_features = [peak_transformation(s) for s in spectrums_features]
 	spectrums_features=[s for s in spectrums_features if len(s.peaks)>=3]
 
-###	
+	
     	# Saving the Pre-processed file
 
 	from matchms.exporting import save_as_msp
 
-	output_file = os.path.join(app.config['UPLOAD_FOLDER'], 'processed', os.path.basename(data_file_path) + '_sample_features.msp')
+	output_file = os.path.join(app.config['UPLOAD_FOLDER'], 'processed/', os.path.splitext(os.path.basename(upload_file))[0] + '_processed_features.msp')
 
-	if os.path.exists(output_file): # Avoids appending 
+	if os.path.exists(output_file):
 	    os.remove(output_file)
 	   
 	    
@@ -167,9 +172,7 @@ def showData():
 
 	import re
 
-	file_path_s_msp = os.path.join(app.config['UPLOAD_FOLDER'],'processed/',os.path.basename(data_file_path)+'_sample_features.msp')
-	
-	with open(file_path_s_msp, 'r', encoding='utf-8') as file:
+	with open(output_file, 'r', encoding='utf-8') as file:
 		content = file.read()
 
 	paragraphs = content.split('\n\n')
@@ -188,17 +191,14 @@ def showData():
 	paragraphs_df = pd.DataFrame(data, columns=['Index', 'Processed spectra: features with minimum 3 peaks of 0.05 relative intensity after processing'])
 	paragraphs_df.set_index('Index', inplace=True)
 	result_df = pd.concat([result_df, paragraphs_df], axis=1)
-
-
-###
-
+	    
 	## Network Analysis and collecting the script results for each spectrum
 
 	import settings 
 	import networkx as nx
 	from matchms.importing import load_from_msp
-###	
-	spectrums_features = list(load_from_msp(file_path_s_msp)) # Import sample spectra, ref net spectra, and tox table
+	
+	spectrums_features = list(load_from_msp(output_file)) # Import sample spectra, ref net spectra, and tox table
 	spectrums_net = list(load_from_msp(os.path.join('staticFiles', 'MassBank_net.msp')))
 	network = nx.read_graphml(os.path.join('staticFiles', 'ref_net.graphml'))
 	tox_dict = pd.read_csv(os.path.join('staticFiles', 'tox.csv')).set_index('inchikey').to_dict(orient='index')
@@ -293,6 +293,11 @@ def showData():
 
 	# Converting the df to an HTML table with applied styles
 	uploaded_df_html = result_df.to_html(classes='table table-sm table-bordered table-hover', escape=False)
+
+
+	# Remove temporary files
+	os.remove(upload_file)
+	os.remove(output_file)
 
 
 	return render_template('show_csv_data.html', data_var=uploaded_df_html)
