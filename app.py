@@ -196,7 +196,7 @@ def showData():
 	from matchms.importing import load_from_msp
 	
 #	spectrums_features = list(load_from_msp(file_path_s_msp)) # Import sample spectra, ref net spectra, and tox table
-	spectrums_net = list(load_from_msp(os.path.join('staticFiles', 'reduced.msp'))) #debuggig RAM?
+	spectrums_net = list(load_from_msp(os.path.join('staticFiles', 'MassBank_net.msp'))) #debuggig RAM?
 	network = nx.read_graphml(os.path.join('staticFiles', 'ref_net.graphml'))
 	tox_dict = pd.read_csv(os.path.join('staticFiles', 'tox.csv')).set_index('inchikey').to_dict(orient='index')
 
