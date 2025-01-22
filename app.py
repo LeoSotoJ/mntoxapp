@@ -155,42 +155,44 @@ def showData():
 	spectrums_features = [peak_transformation(s) for s in spectrums_features]
 	spectrums_features=[s for s in spectrums_features if len(s.peaks)>=3]
 
+
+###
 	
     	# Saving the Pre-processed file
 
-	from matchms.exporting import save_as_msp
+#	from matchms.exporting import save_as_msp
 
-	output_file = os.path.join(app.config['UPLOAD_FOLDER'], 'processed/', os.path.splitext(os.path.basename(upload_file))[0] + '_processed_features.msp')
+#	output_file = os.path.join(app.config['UPLOAD_FOLDER'], 'processed/', os.path.splitext(os.path.basename(upload_file))[0] + '_processed_features.msp')
 
-	if os.path.exists(output_file):
-	    os.remove(output_file)
+#	if os.path.exists(output_file):
+#	    os.remove(output_file)
 	   
 	    
-	save_as_msp(spectrums_features, output_file)
+#	save_as_msp(spectrums_features, output_file)
 
 	## Printing the pre-processed spectrums on a table
 
-	import re
+#	import re
 
-	with open(output_file, 'r', encoding='utf-8') as file:
-		content = file.read()
+#	with open(output_file, 'r', encoding='utf-8') as file:
+#		content = file.read()
 
-	paragraphs = content.split('\n\n')
-	data = []
+#	paragraphs = content.split('\n\n')
+#	data = []
 	
-	for paragraph in paragraphs:
-		lines = paragraph.split('\n')
-		first_line = lines[0]
-		id_number = re.findall(r'\d+', first_line)  # Find the first number in the first line
+#	for paragraph in paragraphs:
+#		lines = paragraph.split('\n')
+#		first_line = lines[0]
+#		id_number = re.findall(r'\d+', first_line)  # Find the first number in the first line
 	    
-		if id_number:  # If a number is found, use it as the index
-			data.append((int(id_number[0]), " ".join(lines)))  # Store the id and paragraph content
-		else:
-			continue
+#		if id_number:  # If a number is found, use it as the index
+#			data.append((int(id_number[0]), " ".join(lines)))  # Store the id and paragraph content
+#		else:
+#			continue
 
-	paragraphs_df = pd.DataFrame(data, columns=['Index', 'Processed spectra: features with minimum 3 peaks of 0.05 relative intensity after processing'])
-	paragraphs_df.set_index('Index', inplace=True)
-	result_df = pd.concat([result_df, paragraphs_df], axis=1)
+#	paragraphs_df = pd.DataFrame(data, columns=['Index', 'Processed spectra: features with minimum 3 peaks of 0.05 relative intensity after processing'])
+#	paragraphs_df.set_index('Index', inplace=True)
+#	result_df = pd.concat([result_df, paragraphs_df], axis=1)
 	    
 	## Network Analysis and collecting the script results for each spectrum
 
@@ -198,7 +200,7 @@ def showData():
 	import networkx as nx
 	from matchms.importing import load_from_msp
 	
-	spectrums_features = list(load_from_msp(output_file)) # Import sample spectra, ref net spectra, and tox table
+#	spectrums_features = list(load_from_msp(output_file)) # Import sample spectra, ref net spectra, and tox table
 	spectrums_net = list(load_from_msp(os.path.join('staticFiles', 'MassBank_net.msp')))
 	network = nx.read_graphml(os.path.join('staticFiles', 'ref_net.graphml'))
 	tox_dict = pd.read_csv(os.path.join('staticFiles', 'tox.csv')).set_index('inchikey').to_dict(orient='index')
