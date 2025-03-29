@@ -7,7 +7,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 app = Flask(__name__)
 
-# Set configuration for production
+# Set configuration for production in Flask
 app.config['DEBUG'] = False
 app.config['TESTING'] = False
 app.config['SECRET_KEY'] = os.urandom(24)  # Set a strong secret key
@@ -17,12 +17,12 @@ ALLOWED_EXTENSIONS = {'csv'}
 app.config['MAX_CONTENT_LENGTH'] = 1 * 1000 * 1000
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-
 @app.route('/', methods=['GET', 'POST'])
 def uploadFile():
 	if request.method == 'POST':
 		f = request.files.get('file')
 
+        # Applying validation rules (below)
 		# Ensure a file is selected
 		if not f:
 			flash('No file selected. Please choose a file and select Upload', 'danger')
@@ -33,7 +33,6 @@ def uploadFile():
 			flash('Invalid file format. Only CSV files are allowed.', 'danger')
 			return redirect(request.url)
 			
-
 		# Check if the file size is within the allowed limit (after reading the file content)
 		# We use the `f.seek(0)` to ensure we reset the file pointer
 		f.seek(0, os.SEEK_END)  # Move to the end to check the file size
@@ -49,7 +48,7 @@ def uploadFile():
 		file_path = os.path.join(app.config['UPLOAD_FOLDER'], data_filename)
 		f.save(file_path)
 		
-		# Store the file path in session
+		# Temporally store the file path in session
 		session['uploaded_file'] = file_path
 		
 		# Flash success message
@@ -57,7 +56,6 @@ def uploadFile():
 		return redirect('/')
 	
 	return render_template("index.html")
-
 
 # Validation for the Upload. Check if the file extension is allowed
 def allowed_file(filename):
@@ -70,12 +68,11 @@ def handle_file_too_large(error):
 	flash('File is too large. Please upload a file smaller than 1 MB.', 'danger')
 	return redirect(request.url)
 
-
 @app.route('/load_example')
 def load_example():
     example_file_path = os.path.join('staticFiles', 'example-DDA-features.csv')
     
-    # Simulates an uploaded file then same processing for example and client file when cleaning temp files
+    # Using the example file as the target file. Same processing for example/client_file regarding temp files
     import shutil
     copied_file_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(example_file_path))
     shutil.copy(example_file_path, copied_file_path)  
@@ -87,7 +84,6 @@ def load_example():
 
     # Redirect back to the main page to display the flash message
     return redirect('/')
-
 
 @app.route('/download_example')
 def download_example():
@@ -105,9 +101,6 @@ def download_example():
         flash('Example file not found!', 'danger')  # Flash message if file not found
         return redirect('/')  # Redirect back to the homepage
         
-        
-
-
 @app.route('/show_data')
 def showData():
 
@@ -141,7 +134,6 @@ def showData():
 						metadata={'id': row[0], 'num_peaks': len(mz_values)})
 				spectrums_features.append(spectrum)
 
-
 	    	## Mass Spectrums Pre-processing 
 		import matchms.filtering as ms_filters
 		from matchms import Spectrum
@@ -156,57 +148,15 @@ def showData():
 			spectrum = Spectrum(mz=spectrum.mz, intensities=np.sqrt(spectrum.intensities) , metadata=spectrum.metadata)
 			return spectrum
 		
-
 		spectrums_features = [peak_processing(s) for s in spectrums_features]
 		spectrums_features = [peak_transformation(s) for s in spectrums_features]
 		spectrums_features=[s for s in spectrums_features if len(s.peaks)>=3]
 
+		# Network Analysis and collecting the script results for each spectrum
 
-	###
-		
-	    	# Saving the Pre-processed file
-
-	#	from matchms.exporting import save_as_msp
-
-	#	output_file = os.path.join(app.config['UPLOAD_FOLDER'], 'processed/', os.path.splitext(os.path.basename(upload_file))[0] + '_processed_features.msp')
-
-	#	if os.path.exists(output_file):
-	#	    os.remove(output_file)
-		   
-		    
-	#	save_as_msp(spectrums_features, output_file)
-
-		## Printing the pre-processed spectrums on a table
-
-	#	import re
-
-	#	with open(output_file, 'r', encoding='utf-8') as file:
-	#		content = file.read()
-
-	#	paragraphs = content.split('\n\n')
-	#	data = []
-		
-	#	for paragraph in paragraphs:
-	#		lines = paragraph.split('\n')
-	#		first_line = lines[0]
-	#		id_number = re.findall(r'\d+', first_line)  # Find the first number in the first line
-		    
-	#		if id_number:  # If a number is found, use it as the index
-	#			data.append((int(id_number[0]), " ".join(lines)))  # Store the id and paragraph content
-	#		else:
-	#			continue
-
-	#	paragraphs_df = pd.DataFrame(data, columns=['Index', 'Processed spectra: features with minimum 3 peaks of 0.05 relative intensity after processing'])
-	#	paragraphs_df.set_index('Index', inplace=True)
-	#	result_df = pd.concat([result_df, paragraphs_df], axis=1)
-		    
-		## Network Analysis and collecting the script results for each spectrum
-
-		import settings 
 		import networkx as nx
 		from matchms.importing import load_from_msp
 		
-	#	spectrums_features = list(load_from_msp(output_file)) # Import sample spectra, ref net spectra, and tox table
 		spectrums_net = list(load_from_msp(os.path.join('staticFiles', 'MassBank_net.msp')))
 		network = nx.read_graphml(os.path.join('staticFiles', 'ref_net.graphml'))
 		tox_dict = pd.read_csv(os.path.join('staticFiles', 'tox.csv')).set_index('inchikey').to_dict(orient='index')
@@ -224,7 +174,8 @@ def showData():
 
 		for f in spectrums_features:	# Loop through the spectrums_features
 			features_id.append(np.int64(f.get('id')))
-			# Capture the print output for each feature
+			
+            # Capture the print output for each feature
 			output = io.StringIO()  # Create a string buffer to capture the prints
 			sys.stdout = output  # Redirect print statements to the buffer
 
@@ -284,28 +235,23 @@ def showData():
 		result_df = pd.concat([result_df, output_df], axis=1)
 		
 		
-		# Create a column with Alerts only
+		# Create a column for Alerts only
 
 		#alerts_df = output_df.loc[output_df.index.isin(alerts_feature_id)]
 		#alerts_df.columns.values[0] = 'Alerts of the suspected NR.AR activity of the feature'
 		#result_df = pd.concat([result_df, alerts_df], axis=1)
 
-
-		
-		# Highlight the rows where the Feature ID is in alerts_feature_id by adding a style (OVERWRITES BOOTSTRAP)
+		# Highlighting the rows where the Feature ID is in alerts_feature_id by adding a style (OVERWRITES BOOTSTRAP)
 		def highlight_alerts(row):
 		    return ['background-color: #FFFACD' if row.name in alerts_feature_id else '' for _ in row]
 		# Apply the style to the DataFrame
 		result_df = result_df.style.apply(highlight_alerts, axis=1)
 
-
 		# Converting the df to an HTML table with applied styles
 		uploaded_df_html = result_df.to_html(classes='table table-sm table-bordered table-hover', escape=False)
 
-
-		# Remove temporary files
+		# Removing temporary files
 		os.remove(upload_file)
-		#os.remove(output_file)
 
 		return render_template('show_csv_data.html', data_var=uploaded_df_html)
 
