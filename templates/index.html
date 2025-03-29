@@ -11,12 +11,12 @@
 <div class="container mt-5" style="max-width: 800px;">
 	
 <h1>MNTox-app</h1>
-
 <p align="justify"> MNTox-app is a demo app for the prediction of endocrine disruptive potency in environmental samples using mass spectrometry. While annotating all MS spectra in a sample can be time consuming and impractical in most cases, MNTox applies a network-based approach to pinpoint MS/MS features with endocrine disruptive potency bypassing MS annotation. <p> 
 
 
 <p align="justify"> Below, it is possible to upload your CSV file with the MS/MS features of LC-ESI-HRMS in positive mode and to predict the NR.AR endpoint potency using the MNTox network. You can also Load an example. The result is then shown in a table with highlighted rows for the alerts. The format for the CSV input file is: <samp>[ID]; [m/z]:[intensity] [m/z]:[intensity] ...</samp>. </p>
 
+<p>To run locally, please refer to the source code: <a href="https://github.com/LeoSotoJ/mntoxapp">mntoxapp <i class="bi bi-github"></i></a></p>
 
     <form method = "POST" enctype="multipart/form-data" action = "/">   
 	<div class="input-group mb-3">
@@ -47,7 +47,12 @@
         <input type="submit" class="btn btn-success mt-3" value="Predict NR.AR activity"/>
     </form>    
 
-<p align="right"><em><a href="https://ionengineer.com/pages/mntox/" >Read more</a> about MNTox.</em></p> 
+<br>
+
+<p align="right"><em><a href="https://ionengineer.com/pages/mntox/" >Read more</a> about MNTox.</em>
+
+
+</p> 
 
 
 <footer class="footer"> 
